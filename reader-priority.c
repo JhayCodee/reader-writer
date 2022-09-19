@@ -9,52 +9,52 @@
     - se Ha utilizado 10 lectores y 5 escritores para demostrar la solución.
 */
 
-sem_t wrt;
-pthread_mutex_t mutex;
-int contador = 1;
-int numero_de_lectores = 0;
+sem_t wrt; // semáforo para controlar el acceso a la sección crítica
+pthread_mutex_t mutex; // mutex para controlar el acceso a la variable contador
+int contador = 1; 
+int numero_de_lectores = 0; // variable para contar el número de lectores
 
 
 // funcion que ejecuta el hilo escritor
 void *writer(void *n_escritor) { 
 
-    sem_wait(&wrt); // protege una seccion de codigo pra que no sea interrupida por otro thread
+    sem_wait(&wrt); // espera a que no haya ningún lector leyendo
 
     contador = contador * 2; 
     printf("Escritor[%d] modificó el contador a: %d unidades\n",(*((int *)n_escritor)), contador); 
 
-    sem_post(&wrt); // libera la seccion de codigo protegida
+    sem_post(&wrt); // libera el semáforo para que otro escritor pueda escribir
 }
 
 
 // funcion que ejecuta el hilo lector
 void *reader(void *n_lector) { 
 
-    pthread_mutex_lock(&mutex);  
+    pthread_mutex_lock(&mutex); // espera a que no haya ningún escritor escribiendo
 
     numero_de_lectores++; // incrementa el numero de lectores
 
-    // si es el primer lector, bloquea al escritor
+    // si es el primer lector, espera a que no haya ningún escritor escribiendo
     if(numero_de_lectores == 1) { 
-        sem_wait(&wrt); 
+        sem_wait(&wrt);  
     }
 
-    pthread_mutex_unlock(&mutex); 
+    pthread_mutex_unlock(&mutex);  // libera el mutex
     
-    // seccion de lectura
+    // lee el contador
     printf("Lector[%d] leyó el contador con: %d unidades\n",*((int *)n_lector), contador);
 
-    // El lector adquiere el bloqueo antes de modificar num reader
+    // espera a que no haya ningún escritor escribiendo
     pthread_mutex_lock(&mutex);
 
     numero_de_lectores--; // decrementa el numero de lectores
     
-    // si es el ultimo lector, desbloquea al escritor
+    // si es el último lector, libera el semáforo para que otro escritor pueda escribir
     if(numero_de_lectores == 0) { 
         sem_post(&wrt); 
     }
 
-    // libera el bloqueo
+    // libera el mutex
     pthread_mutex_unlock(&mutex);
 }
 
